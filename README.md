@@ -5,35 +5,109 @@ We used the same API we used before in the [**empm project task**][empm_repo_lin
 It implements a **User List** feature with **Bloc for state management** and **Dio for API calls**.
 
 
-## Clean Architecture Implementation
+## Features Implemented
+
+✅ 1. Clean Architecture
 
 This project follows the **three-layered Clean Architecture**:
+ **Clean Architecture** principles separate concerns into different layers, ensuring scalability, testability, and maintainability.
 
- **Clean Architecture** principles separate concerns into different layers, ensuring scalability, testability, and maintainability. 
+✅ 2. Fetching Users (Use Case Example)
 
-### 1️⃣ Data Layer
+GetUsers use case fetches a list of users from the API.
+UserRepositoryImpl handles data retrieval.
+
+✅ 3. Dependency Injection (DI)
+
+Uses GetIt for service locator.
+Registers repositories, use cases, and BLoC instances.
+
+✅ 4. State Management (BLoC)
+
+Implements UserBloc for fetching users.
+Uses FetchUsers event and UsersLoaded state.
+
+✅ 5. UI to Display Users
+
+UsersPage displays fetched user data using ListView.
+
+---
+
+# How the layers work
+
+## Data Layer (Fetching from API)
+
 - **Responsible for data retrieval**
 - Implements `UserRemoteDataSource` using **Dio** for API requests.
 - Converts **JSON responses into UserModel**.
 - Implements `UserRepositoryImpl` which interacts with `UserRemoteDataSource`.
 
-### 2️⃣ Domain Layer
+``` dart
+class UserRemoteDataSourceImpl implements UserRemoteDataSource {
+  final Dio dio;
+  UserRemoteDataSourceImpl({required this.dio});
+
+  @override
+  Future<List<UserModel>> getUsers() async {
+    final response = await dio.get('https://jsonplaceholder.typicode.com/users');
+    return (response.data as List).map((user) => UserModel.fromJson(user)).toList();
+  }
+}
+```
+
+## Domain Layer (Use Case & Repository Contract)
+
 - **Business logic layer** (independent of data sources & UI).
 - Defines:
   - `User` **entity** (Core business object).
   - `UserRepository` **abstract class** (contract).
   - `GetUsers` **use case** (fetches users from the repository).
 
-### 3️⃣ Presentation Layer
-- **Handles UI & state management**.
-- Uses **Flutter Bloc** to manage user state.
-- `UsersBloc` listens to `FetchUsers` events and loads users.
+``` dart
+abstract class UserRepository {
+  Future<Either<Failure, List<User>>> getUsers();
+}
 
-<br>
+class GetUsers implements UseCase<List<User>, NoParams> {
+  final UserRepository repository;
+  GetUsers(this.repository);
+  @override
+  Future<Either<Failure, List<User>>> call(NoParams params) async {
+    return await repository.getUsers();
+  }
+}
+```
+
+## Presentation Layer (BLoC & UI)
+- **Handles UI & state management (Bloc)**.
+The UsersBloc listens for the FetchUsers event, fetches data using the GetUsers use case, and emits either:
+UsersLoaded (on success)
+UsersError (on failure)
+Example:
+
+``` dart
+class UsersBloc extends Bloc<UsersEvent, UsersState> {
+  final GetUsers getUsers;
+  UsersBloc(this.getUsers) : super(UsersInitial());
+
+  @override
+  Stream<UsersState> mapEventToState(UsersEvent event) async* {
+    if (event is FetchUsers) {
+      yield UsersLoading();
+      final failureOrUsers = await getUsers(NoParams());
+      yield failureOrUsers.fold(
+        (failure) => UsersError("Failed to load users"),
+        (users) => UsersLoaded(users),
+      );
+    }
+  }
+}
+
+```
 
 ---
 
-## 🔗 Dependency Injection
+## 4️⃣ Dependency Injection Setup
 
 We use **GetIt** for dependency injection. The `injection_container.dart` file registers:
 - `Dio` instance
@@ -42,44 +116,19 @@ We use **GetIt** for dependency injection. The `injection_container.dart` file r
 - `GetUsers` use case
 - `UsersBloc`
 
-like below...
+``` dart
+final sl = GetIt.instance;
 
-```dart
-sl.registerLazySingleton<UserRemoteDataSource>(() => UserRemoteDataSourceImpl(dio: sl()));
-```
-<br>
-
----
-
-## State Management (BLoC)
-The UsersBloc listens for the FetchUsers event, fetches data using the GetUsers use case, and emits either:
-
-UsersLoaded (on success)
-UsersError (on failure)
-Example:
-
-```dart
-class UsersBloc extends Bloc<UsersEvent, UsersState> {
-  final GetUsers getUsers;
-
-  UsersBloc({required this.getUsers}) : super(UsersInitial()) {
-    on<FetchUsers>(_onFetchUsers);
-  }
-
-  Future<void> _onFetchUsers(FetchUsers event, Emitter<UsersState> emit) async {
-    emit(UsersLoading());
-    final result = await getUsers(NoParams());
-    result.fold(
-      (failure) => emit(UsersError()),
-      (users) => emit(UsersLoaded(users: users)),
-    );
-  }
+void init() {
+  sl.registerLazySingleton(() => Dio());
+  sl.registerLazySingleton<UserRemoteDataSource>(() => UserRemoteDataSourceImpl(dio: sl()));
+  sl.registerLazySingleton<UserRepository>(() => UserRepositoryImpl(sl()));
+  sl.registerLazySingleton(() => GetUsers(sl()));
+  sl.registerFactory(() => UsersBloc(sl()));
 }
-
 ```
 
 <br>
-
 ---
 
 ## 🎨 UI Implementation
