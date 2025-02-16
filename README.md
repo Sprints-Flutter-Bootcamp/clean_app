@@ -32,8 +32,6 @@ This project follows the **three-layered Clean Architecture**:
 <br>
 
 ---
----
----
 
 ## 🔗 Dependency Injection
 
@@ -51,8 +49,6 @@ sl.registerLazySingleton<UserRemoteDataSource>(() => UserRemoteDataSourceImpl(di
 ```
 <br>
 
----
----
 ---
 
 ## State Management (BLoC)
@@ -85,8 +81,6 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 <br>
 
 ---
----
----
 
 ## 🎨 UI Implementation
 A basic UI displays fetched users:
@@ -117,8 +111,6 @@ BlocBuilder<UsersBloc, UsersState>(
 <br>
 
 ---
----
----
 
 ## 🛠 Tech Stack
 - Flutter
@@ -130,16 +122,11 @@ BlocBuilder<UsersBloc, UsersState>(
 <br>
 
 ---
----
----
 
-### I have used the package `very_good_cli` to easily create a structured flutter project with ease
+### I have used the package `very_good_cli` to easily create a structured flutter project
 
 *I have kept some of the readme generated below*
 
-
----
----
 ---
 ## Getting Started with very_good_cli
 
