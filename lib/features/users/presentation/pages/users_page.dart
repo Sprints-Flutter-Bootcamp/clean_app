@@ -1,3 +1,4 @@
+import 'package:clean_app/core/widgets/my_app_bar.dart';
 import 'package:clean_app/features/users/presentation/bloc/users_bloc.dart';
 import 'package:clean_app/features/users/presentation/bloc/users_event.dart';
 import 'package:clean_app/features/users/presentation/bloc/users_state.dart';
@@ -8,7 +9,8 @@ class UsersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Users")),
+      // appBar: AppBar(title: Text("Users")),
+      appBar: myAppBar(context, "Users"),
       body: BlocBuilder<UserBloc, UserState>(
         builder: (context, state) {
           if (state is UserLoading) {
@@ -27,14 +29,19 @@ class UsersPage extends StatelessWidget {
           } else if (state is UserError) {
             return Center(child: Text(state.message));
           }
-          return Center(child: Text("Press the button to fetch users"));
+          return const Center(child: Text("Press the button to fetch users"));
         },
       ),
       floatingActionButton: FloatingActionButton(
+        shape: CircleBorder(),
+        backgroundColor: Colors.blue,
         onPressed: () {
           context.read<UserBloc>().add(FetchUsers());
         },
-        child: Icon(Icons.refresh),
+        child: Icon(
+          Icons.refresh,
+          color: Colors.white,
+        ),
       ),
     );
   }
